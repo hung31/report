@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>校園網路及課程服務回報系統</title>
+    <style>
+        :root { 
+            --primary-color: #2563eb; 
+            --bg-color: #f1f5f9; 
+            --text-dark: #1e293b;
+            --accent-red: #dc2626;
+        }
+        body { 
+            font-family: -apple-system, "Noto Sans TC", sans-serif; 
+            background: var(--bg-color); 
+            margin: 0; padding: 15px; display: flex; justify-content: center; align-items: center; min-height: 100vh; 
+        }
+        .container { 
+            width: 100%; max-width: 420px; background: white; 
+            padding: 35px 20px; border-radius: 20px; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.08); 
+        }
+        h2 { text-align: center; color: var(--text-dark); margin-bottom: 12px; font-weight: 800; font-size: 26px; }
+        .subtitle { font-size: 15px; color: #64748b; margin-bottom: 30px; line-height: 1.8; text-align: center; font-weight: 500; }
+        
+        .field-group { margin-bottom: 20px; }
+        label { display: block; margin-bottom: 10px; font-size: 17px; color: var(--text-dark); font-weight: 700; }
+        input, select, textarea { 
+            width: 100%; padding: 14px; border: 2px solid #e2e8f0; border-radius: 12px; 
+            font-size: 16px; box-sizing: border-box; transition: 0.3s; background: #fff;
+        }
+        input:focus, select:focus, textarea:focus { 
+            border-color: var(--primary-color); outline: none; box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1); 
+        }
+
+        .hint-box {
+            display: none; margin-top: 10px; padding: 12px; background-color: #f8fafc;
+            border-left: 4px solid var(--primary-color); border-radius: 8px; font-size: 13px; color: #475569; line-height: 1.6;
+        }
+        .text-red { color: var(--accent-red); font-weight: bold; }
+        .wifi-link { color: var(--primary-color); text-decoration: underline; font-weight: 600; }
+
+        .email-group { display: flex; align-items: stretch; }
+        .email-group input { flex: 1; border-top-right-radius: 0; border-bottom-right-radius: 0; margin-bottom: 0; min-width: 0; }
+        .email-suffix { background: #f8fafc; padding: 0 12px; border: 2px solid #e2e8f0; border-left: none; border-radius: 0 12px 12px 0; display: flex; align-items: center; font-weight: 600; color: #64748b; font-size: 13px; white-space: nowrap; }
+        
+        .cond-field { display: none; }
+        
+        .btn-submit { width: 100%; background: var(--primary-color); color: white; border: none; padding: 18px; border-radius: 12px; font-size: 19px; font-weight: bold; cursor: pointer; margin-top: 15px; }
+        .btn-submit:disabled { background: #94a3b8; cursor: not-allowed; }
+        .loading { display: none; text-align: center; color: var(--primary-color); margin-top: 15px; font-weight: 600; }
+
+        /* 最終版：黑底白字美化通知 */
+        #success-modal {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85); z-index: 1000; justify-content: center; align-items: center;
+        }
+        .modal-content {
+            background: #111111; /* 純深黑背景 */
+            padding: 60px 30px; border-radius: 28px; text-align: center;
+            box-shadow: 0 0 40px rgba(255,255,255,0.1); max-width: 340px; width: 85%;
+            border: 2px solid rgba(255,255,255,0.2);
+        }
+        .modal-content h3 { 
+            font-size: 38px; /* 加大白字標題 */
+            color: #ffffff; 
+            margin: 0 0 20px 0; font-weight: 900; 
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+        }
+        .modal-content p { 
+            font-size: 22px; /* 加大內文 */
+            color: #eeeeee; 
+            margin: 0; font-weight: 500; line-height: 1.5; 
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>🛠 校園網路及課程服務回報單</h2>
+    <p class="subtitle">提供網路及 TronClass 平台回報<br>請填寫下列資訊，我們將儘速處理</p>
+    
+    <div class="field-group">
+        <label>📂 問題類型</label>
+        <select id="category" onchange="updateFields()">
+            <option value="校園網路">校園網路</option>
+            <option value="WI-FI">WI-FI 校園無線網路</option>
+            <option value="TronClass">TronClass 教學平台</option>
+            <option value="其他">其他</option>
+        </select>
+        <div id="wifi-info" class="hint-box">
+            校園無線網路名稱為 <span class="text-red">ntou</span> 或 <span class="text-red">ntou-802.1X</span>，除此以外請至鄰近系辦詢問。登入方式或說明請見 <a href="https://li.ntou.edu.tw/p/412-1029-7181.php?Lang=zh-tw" target="_blank" class="wifi-link">校園無線網路</a>。
+        </div>
+    </div>
+
+    <div class="field-group">
+        <label>👤 姓名</label>
+        <input type="text" id="name" placeholder="您的完整姓名">
+    </div>
+
+    <div id="sid-box" class="field-group cond-field">
+        <label>🆔 學號 / 職員證號</label>
+        <input type="text" id="studentId" placeholder="請輸入編號">
+    </div>
+
+    <div class="field-group">
+        <label>📞 聯絡電話</label>
+        <input type="tel" id="phone" placeholder="手機或分機">
+    </div>
+
+    <div class="field-group">
+        <label>✉️ 電子郵件</label>
+        <div class="email-group">
+            <input type="text" id="email_user" placeholder="輸入帳號">
+            <div class="email-suffix">@mail.ntou.edu.tw</div>
+        </div>
+    </div>
+
+    <div id="loc-box" class="field-group cond-field">
+        <label>🏢 問題地點</label>
+        <input type="text" id="location" placeholder="例如：行政大樓 2F">
+    </div>
+
+    <div class="field-group">
+        <label>📝 問題具體描述</label>
+        <div id="wired-info" class="hint-box" style="margin-bottom: 10px;">
+            ⚠️ 務必告知 IP (140.121.xxx.xxx) 或詳述所在地點之資訊。
+        </div>
+        <textarea id="note" rows="6" placeholder="請填寫具體情況..."></textarea>
+    </div>
+
+    <button id="submitBtn" class="btn-submit" onclick="submitToGoogleForm()">送出回報單</button>
+    <div id="loading" class="loading">⏳ 傳送中，請稍候...</div>
+</div>
+
+<div id="success-modal">
+    <div class="modal-content">
+        <h3>✅ 回報成功！</h3>
+        <p>我們將儘速為您處理</p>
+    </div>
+</div>
+
+<iframe name="hidden_iframe" id="hidden_iframe" style="display:none;"></iframe>
+
+<script>
+    window.onload = function() { updateFields(); };
+
+    function updateFields() {
+        const cat = document.getElementById('category').value;
+        const sidBox = document.getElementById('sid-box');
+        const locBox = document.getElementById('loc-box');
+        const wifiInfo = document.getElementById('wifi-info');
+        const wiredInfo = document.getElementById('wired-info');
+        const noteArea = document.getElementById('note');
+
+        sidBox.style.display = (cat === "TronClass") ? 'block' : 'none';
+        locBox.style.display = (cat === "WI-FI") ? 'block' : 'none';
+        wifiInfo.style.display = (cat === "WI-FI") ? 'block' : 'none';
+        wiredInfo.style.display = (cat === "校園網路") ? 'block' : 'none';
+
+        noteArea.value = ""; 
+    }
+
+    function submitToGoogleForm() {
+        const btn = document.getElementById('submitBtn');
+        const loading = document.getElementById('loading');
+        const modal = document.getElementById('success-modal');
+        const formID = "1FAIpQLSfwPegQCOBOonrEFRnlgdUlo4UtfAtqYVww55thhSvRgho5mQ";
+        const actionURL = `https://docs.google.com/forms/d/e/${formID}/formResponse`;
+
+        const cat = document.getElementById('category').value;
+        const name = document.getElementById('name').value.trim();
+        const phone = document.getElementById('phone').value.trim();
+        const emailUser = document.getElementById('email_user').value.trim();
+        const location = document.getElementById('location').value.trim();
+        const note = document.getElementById('note').value.trim();
+
+        if (!name || !phone || !note || !emailUser) {
+            alert("請務必完整填寫所有欄位");
+            return;
+        }
+
+        btn.disabled = true;
+        loading.style.display = 'block';
+
+        const form = document.createElement('form');
+        form.action = actionURL;
+        form.method = 'POST';
+        form.target = 'hidden_iframe';
+
+        let finalNote = note;
+        if (cat === "WI-FI") {
+            finalNote = `【問題地點：${location}】\n${note}`;
+        }
+
+        const data = {
+            "entry.1515724942": cat,
+            "entry.1710680189": name,
+            "entry.1684857821": document.getElementById('studentId').value.trim(),
+            "entry.498053581": phone,
+            "entry.2029585950": emailUser + "@mail.ntou.edu.tw",
+            "entry.1300025129": finalNote
+        };
+
+        for (let key in data) {
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = key;
+            input.value = data[key];
+            form.appendChild(input);
+        }
+
+        document.body.appendChild(form);
+        form.submit();
+        document.body.removeChild(form);
+
+        setTimeout(() => {
+            loading.style.display = 'none';
+            modal.style.display = 'flex'; 
+            
+            setTimeout(() => {
+                window.location.reload(); 
+            }, 2500);
+        }, 1200);
+    }
+</script>
+</body>
+</html>
